@@ -70,14 +70,14 @@ export default function App() {
     if (zone) fetchGardes(zone);
   }, [zone, fetchGardes]);
 
-  const handleZoneSelected = async (z) => {
+  const handleZoneSelected = async (z, pushToken) => {
     localStorage.setItem(STORAGE_KEY_ZONE, JSON.stringify(z));
     setZone(z);
 
     const deviceId = getOrCreateDeviceId();
     
-    // Demande l'autorisation et récupère le token push
-    const pushToken = await requestPushSubscription();
+    // Utilise le token passé par l'onboarding ou fait un appel fallback si manquant
+    const finalToken = pushToken || await requestPushSubscription();
     
     // Enregistrement de l'abonnement avec le token push
     fetch('/.netlify/functions/abonnements', {
@@ -86,7 +86,7 @@ export default function App() {
       body: JSON.stringify({ 
         device_id: deviceId, 
         zone_id: z.id,
-        pushToken: pushToken // Envoi du token (endpoint + keys)
+        pushToken: finalToken // Envoi du token (endpoint + keys)
       }),
     }).catch(() => {});
   };

@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
@@ -21,19 +24,7 @@ export default defineConfig({
           { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' }
         ]
-      },
-      workbox: {
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/.*\.netlify\.app\/\.netlify\/functions\/(zones|gardes-actuelle).*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: { maxEntries: 10, maxAgeSeconds: 7 * 24 * 60 * 60 },
-            },
-          },
-        ],
-      },
+      }
     }),
   ],
   server: {

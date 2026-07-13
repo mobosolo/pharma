@@ -24,9 +24,9 @@ export default function Onboarding({ onZoneSelected }) {
 
     // Demande l'autorisation des notifications avant de continuer
     // Cela assure que l'appel est lié à un geste utilisateur (clic)
-    await requestPushSubscription();
+    const pushToken = await requestPushSubscription();
 
-    onZoneSelected(zone);
+    onZoneSelected(zone, pushToken);
   };
 
   return (

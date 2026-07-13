@@ -1,10 +1,7 @@
+const { schedule } = require("@netlify/functions");
 const webpush = require('web-push');
 const { neon } = require('@neondatabase/serverless');
 const qs = require('qs');
-
-exports.config = {
-  schedule: "@daily"
-};
 
 webpush.setVapidDetails(
   'mailto:contact@exemple.tg',
@@ -29,7 +26,7 @@ function cleanPhone(phone) {
   return cleaned;
 }
 
-exports.handler = async (event) => {
+const scraperHandler = async (event) => {
   console.log("Démarrage du scraper Pharmacies de Garde (Togo)...");
   
   try {
@@ -209,3 +206,6 @@ Le scraper a rencontré une erreur : `${err.message}`
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+exports.handler = schedule("@daily", scraperHandler);
+
