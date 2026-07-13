@@ -1,4 +1,3 @@
-import { schedule } from '@netlify/functions';
 import webpush from 'web-push';
 
 webpush.setVapidDetails(
@@ -27,7 +26,7 @@ function cleanPhone(phone) {
   return cleaned;
 }
 
-export const handler = schedule("@daily", async (event) => {
+export const handler = async (event) => {
   console.log("Démarrage du scraper Pharmacies de Garde (Togo)...");
   
   try {
