@@ -35,7 +35,7 @@ exports.handler = async (event) => {
             headers, 
             body: JSON.stringify({ 
                 current: currentGarde[0] || null, 
-                pharmacies: pharmacies 
+                pharmacies: result 
             }) 
         };
     } catch(e) {
