@@ -2,6 +2,10 @@ const webpush = require('web-push');
 const { neon } = require('@neondatabase/serverless');
 const qs = require('qs');
 
+exports.config = {
+  schedule: "@daily"
+};
+
 webpush.setVapidDetails(
   'mailto:contact@exemple.tg',
   process.env.VAPID_PUBLIC_KEY,
