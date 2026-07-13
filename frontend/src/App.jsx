@@ -10,10 +10,6 @@ const STORAGE_KEY_ZONE   = 'pharma_zone';
 const STORAGE_KEY_DEVICE = 'pharma_device_id';
 const STORAGE_KEY_CACHE  = 'pharma_cache';
 
-const STORAGE_KEY_ZONE   = 'pharma_zone';
-const STORAGE_KEY_DEVICE = 'pharma_device_id';
-const STORAGE_KEY_CACHE  = 'pharma_cache';
-
 function generateUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
     const r = Math.random() * 16 | 0;
