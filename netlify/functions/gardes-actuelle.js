@@ -21,22 +21,14 @@ exports.handler = async (event) => {
             FROM gardes g
             JOIN pharmacies_gardes pg ON g.id = pg.garde_id
             JOIN pharmacies p ON pg.pharmacie_id = p.id
-            WHERE g.id = (SELECT id FROM gardes WHERE date_debut <= NOW() AND date_fin >= NOW() LIMIT 1)
+            WHERE g.date_fin >= CURRENT_DATE 
+            AND g.date_debut <= (CURRENT_DATE + INTERVAL '1 day')
             AND p.zone_id = ${zone_id}
+            ORDER BY g.date_debut DESC
+            LIMIT 100
         `;
         
-        // On reformate pour correspondre à l'ancien format
-        const pharmacies = result.map(r => ({
-            id: r.id,
-            nom: r.nom,
-            telephone: r.telephone,
-            adresse: r.adresse,
-            assurances: r.assurances,
-            horaires: r.horaires
-        }));
-        
-        // On récupère la période actuelle
-        const currentGarde = await sql`SELECT id, date_debut, date_fin FROM gardes WHERE date_debut <= NOW() AND date_fin >= NOW() LIMIT 1`;
+        const currentGarde = await sql`SELECT id, date_debut, date_fin FROM gardes WHERE date_fin >= CURRENT_DATE ORDER BY date_debut DESC LIMIT 1`;
         
         return { 
             statusCode: 200, 
