@@ -4,6 +4,11 @@ import PharmacieCard from './components/PharmacieCard.jsx';
 import SkeletonCard from './components/SkeletonCard.jsx';
 import ZoneSheet from './components/ZoneSheet.jsx';
 import Onboarding from './components/Onboarding.jsx';
+import { requestPushSubscription } from './push-service';
+
+const STORAGE_KEY_ZONE   = 'pharma_zone';
+const STORAGE_KEY_DEVICE = 'pharma_device_id';
+const STORAGE_KEY_CACHE  = 'pharma_cache';
 
 const STORAGE_KEY_ZONE   = 'pharma_zone';
 const STORAGE_KEY_DEVICE = 'pharma_device_id';
@@ -69,16 +74,24 @@ export default function App() {
     if (zone) fetchGardes(zone);
   }, [zone, fetchGardes]);
 
-  const handleZoneSelected = (z) => {
+  const handleZoneSelected = async (z) => {
     localStorage.setItem(STORAGE_KEY_ZONE, JSON.stringify(z));
     setZone(z);
 
-    // Enregistrement de l'abonnement (anonyme, sans push token pour l'instant)
     const deviceId = getOrCreateDeviceId();
+    
+    // Demande l'autorisation et récupère le token push
+    const pushToken = await requestPushSubscription();
+    
+    // Enregistrement de l'abonnement avec le token push
     fetch('/.netlify/functions/abonnements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ device_id: deviceId, zone_id: z.id }),
+      body: JSON.stringify({ 
+        device_id: deviceId, 
+        zone_id: z.id,
+        pushToken: pushToken // Envoi du token (endpoint + keys)
+      }),
     }).catch(() => {});
   };
 
