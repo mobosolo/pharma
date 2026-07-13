@@ -1,7 +1,6 @@
 {
   "name": "pharma-functions",
   "version": "1.0.0",
-  "type": "module",
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
     "web-push": "^3.6.7",
