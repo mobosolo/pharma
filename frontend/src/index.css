@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg:       #0f172a;
+  --color-surface:  #1e293b;
+  --color-card:     #263044;
+  --color-teal:     #16a34a;
+  --color-teal-hover: #15803d;
+  --color-text:     #f1f5f9;
+  --color-muted:    #94a3b8;
+  --color-border:   #334155;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes pulse-skeleton {
+  0%, 100% { opacity: 0.4; }
+  50%       { opacity: 0.8; }
+}
+
+.skeleton {
+  background: var(--color-border);
+  border-radius: 6px;
+  animation: pulse-skeleton 1.4s ease-in-out infinite;
+}
+
+/* Bottom sheet animation */
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+.slide-up { animation: slide-up 0.25s ease-out; }

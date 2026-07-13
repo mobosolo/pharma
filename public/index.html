@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Notification Push - Pharmacies de Garde</title>
+</head>
+<body style="font-family: sans-serif; padding: 20px;">
+    <h1>Pharmacies de Garde - Test Phase 3</h1>
+    <p>Cette page simule le Frontend (Phase 4). Elle utilise la vraie clé VAPID pour s'abonner.</p>
+    
+    <button id="btn-subscribe" style="padding: 10px; background: #007bff; color: white; border: none; cursor: pointer;">
+        Autoriser et S'abonner (Zone 1)
+    </button>
+    <button id="btn-trigger" style="padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; margin-left:10px;">
+        Déclencher le scraper (Notification Manuelle)
+    </button>
+    
+    <div id="status" style="margin-top: 20px; font-weight: bold;">Statut: En attente...</div>
+
+    <script>
+        const VAPID_PUBLIC_KEY = "BKvt-sKFwbL3YpTrP_VX2EeYSSrhlEWCccO98iUW6cMs-_adPQO7l1yhPH84D5gBU0L068P_y634X002zFn0irA";
+        
+        function urlBase64ToUint8Array(base64String) {
+          const padding = '='.repeat((4 - base64String.length % 4) % 4);
+          const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+          const rawData = window.atob(base64);
+          const outputArray = new Uint8Array(rawData.length);
+          for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+          }
+          return outputArray;
+        }
+
+        document.getElementById('btn-subscribe').addEventListener('click', async () => {
+            document.getElementById('status').innerText = "1. Demande de permission au navigateur...";
+            const perm = await Notification.requestPermission();
+            if (perm !== 'granted') return document.getElementById('status').innerText = "Permission refusée.";
+
+            document.getElementById('status').innerText = "2. Enregistrement du Service Worker...";
+            const reg = await navigator.serviceWorker.register('/sw.js');
+            await navigator.serviceWorker.ready;
+            
+            document.getElementById('status').innerText = "3. Récupération objet Web Push (Endpoint / Clés)...";
+            const subscription = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+            });
+            
+            document.getElementById('status').innerText = "4. Envoi du PUT /abonnements (UUID + Zone + PushToken)...";
+            const res = await fetch("/.netlify/functions/abonnements", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    device_id: "test-device-uuid-xxx-yyy",
+                    zone_id: 1, // On s'abonne fixe a la zone 1 pour le test
+                    pushToken: subscription // on envoie l'objet entier qui contient endpoint et keys
+                })
+            });
+            
+            if (res.ok) {
+                document.getElementById('status').innerText = "5. Succès ! Vous êtes abonné(e). Cliquez sur 'Déclencher' maintenant.";
+            } else {
+                document.getElementById('status').innerText = "Erreur Backend : " + await res.text();
+            }
+        });
+        
+        document.getElementById('btn-trigger').addEventListener('click', async () => {
+            document.getElementById('status').innerText = "Exécution de la routine scraper (forçage Push)...";
+            const res = await fetch("/trigger-push"); // Route mockee dans le serveur custom pour tester
+            alert(await res.text());
+        });
+    </script>
+</body>
+</html>

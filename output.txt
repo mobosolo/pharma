@@ -1,0 +1,7 @@
+Lancement du test...
+Démarrage du scraper Pharmacies de Garde (Togo)...
+Crash scraper : Error: Erreur HTTP: 400 Bad Request
+    at file:///C:/Users/djibo/.gemini/antigravity/scratch/pharma-togo/netlify/functions/scraper.js:36:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async test (file:///C:/Users/djibo/.gemini/antigravity/scratch/pharma-togo/test-scraper.js:7:17)
+Retour de la fonction Netlify: { statusCode: 500, body: '{"error":"Erreur HTTP: 400 Bad Request"}' }
