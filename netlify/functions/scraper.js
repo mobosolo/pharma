@@ -1,16 +1,15 @@
-import webpush from 'web-push';
+const webpush = require('web-push');
+const { neon } = require('@neondatabase/serverless');
+const qs = require('qs');
 
 webpush.setVapidDetails(
   'mailto:contact@exemple.tg',
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
-import { neon } from '@neondatabase/serverless';
-import qs from 'qs';
 
 const sql = neon(process.env.DATABASE_URL);
 
-// Nettoyage téléphone format Togolais : +228 90 00 00 00 (sans espace)
 function cleanPhone(phone) {
   if (!phone) return null;
   let cleaned = phone.replace(/[\s\-\.]/g, '');
@@ -26,7 +25,7 @@ function cleanPhone(phone) {
   return cleaned;
 }
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   console.log("Démarrage du scraper Pharmacies de Garde (Togo)...");
   
   try {
@@ -65,7 +64,6 @@ export const handler = async (event) => {
     const periodeDe = latestGarde.de;
     const periodeA = latestGarde.a;
     
-    // Comparaison
     const lastSaved = await sql`
         SELECT id FROM gardes WHERE date_debut = ${periodeDe} AND date_fin = ${periodeA} LIMIT 1
     `;
@@ -100,7 +98,6 @@ export const handler = async (event) => {
             
             if (!nom || !zoneDataTitle) continue;
             
-            // 1. Zone
             const zoneRes = await sql`
                 INSERT INTO zones (nom) VALUES (${zoneDataTitle}) 
                 ON CONFLICT (nom) DO UPDATE SET nom=EXCLUDED.nom 
@@ -108,7 +105,6 @@ export const handler = async (event) => {
             `;
             const zoneId = zoneRes[0].id;
             
-            // 2. Pharmacie
             const pharmaRes = await sql`
                 INSERT INTO pharmacies (nom, telephone, adresse, assurances, horaires, zone_id) 
                 VALUES (${nom}, ${phone}, ${adresseText}, ${assurances}::jsonb, ${horaires}::jsonb, ${zoneId})
@@ -121,7 +117,6 @@ export const handler = async (event) => {
             `;
             const pharmaId = pharmaRes[0].id;
             
-            // 3. Liaison
             await sql`
                 INSERT INTO pharmacies_gardes (garde_id, pharmacie_id)
                 VALUES (${insertedGardeId}, ${pharmaId})
@@ -188,25 +183,25 @@ export const handler = async (event) => {
 
     return { statusCode: 200, body: JSON.stringify({ action: "inserted", count: compte }) };
   } catch (err) {
-      console.error("Crash scraper :", err);
-
-      // Alerte Discord
-      if (process.env.DISCORD_WEBHOOK_URL) {
-          try {
-              await fetch(process.env.DISCORD_WEBHOOK_URL, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                      content: `🚨 **Alerte Scraper PharmaGarde**\nLe scraper a rencontré une erreur : \`${err.message}\`\n📅 Date : ${new Date().toLocaleString('fr-FR')}`
-                  })
-              });
-              console.log("Alerte Discord envoyée.");
-          } catch (discordErr) {
-              console.error("Impossible d'envoyer l'alerte Discord:", discordErr.message);
-          }
-      }
-
-      return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error("Crash scraper :", err);
+    
+    if (process.env.DISCORD_WEBHOOK_URL) {
+        try {
+            await fetch(process.env.DISCORD_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: `🚨 **Alerte Scraper PharmaGarde**
+Le scraper a rencontré une erreur : `${err.message}`
+📅 Date : ${new Date().toLocaleString('fr-FR')}`
+                })
+            });
+            console.log("Alerte Discord envoyée.");
+        } catch (discordErr) {
+            console.error("Impossible d'envoyer l'alerte Discord:", discordErr.message);
+        }
+    }
+    
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-  });
-
+};

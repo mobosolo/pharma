@@ -1,6 +1,6 @@
-import { neon } from '@neondatabase/serverless';
+const { neon } = require('@neondatabase/serverless');
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
     const headers = { 
         "Content-Type": "application/json", 
         "Access-Control-Allow-Origin": "*" 
