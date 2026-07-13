@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MapPin } from 'lucide-react';
+import { requestPushSubscription } from '../push-service';
 
 export default function Onboarding({ onZoneSelected }) {
   const [zones, setZones] = useState([]);
@@ -17,9 +18,15 @@ export default function Onboarding({ onZoneSelected }) {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const zone = zones.find(z => z.id == selected);
-    if (zone) onZoneSelected(zone);
+    if (!zone) return;
+
+    // Demande l'autorisation des notifications avant de continuer
+    // Cela assure que l'appel est lié à un geste utilisateur (clic)
+    await requestPushSubscription();
+
+    onZoneSelected(zone);
   };
 
   return (
