@@ -14,8 +14,8 @@ export default defineConfig({
         name: 'Pharmacies de Garde — Togo',
         short_name: 'PharmaGarde',
         description: 'Trouvez la pharmacie de garde la plus proche au Togo',
-        theme_color: '#0f172a',
-        background_color: '#0f172a',
+        theme_color: '#f8fafc',
+        background_color: '#f8fafc',
         display: 'standalone',
         icons: [
           { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
