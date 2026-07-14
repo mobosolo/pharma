@@ -1,4 +1,4 @@
-//const { schedule } = require("@netlify/functions");
+const { schedule } = require("@netlify/functions");
 const webpush = require('web-push');
 const { neon } = require('@neondatabase/serverless');
 const qs = require('qs');
@@ -206,9 +206,8 @@ Le scraper a rencontré une erreur : ${err.message}
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
-exports.handler = scraperHandler;
-//exports.handler = schedule("@daily", scraperHandler);
 
+exports.handler = schedule("@daily", scraperHandler);
 
 
 
