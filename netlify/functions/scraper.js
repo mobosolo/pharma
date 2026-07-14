@@ -206,6 +206,9 @@ Le scraper a rencontré une erreur : ${err.message}
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
-
+exports.handler = scraperHandler;
 //exports.handler = schedule("@daily", scraperHandler);
+
+
+
 
