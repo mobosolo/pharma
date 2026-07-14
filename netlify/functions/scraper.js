@@ -1,4 +1,4 @@
-const { schedule } = require("@netlify/functions");
+//const { schedule } = require("@netlify/functions");
 const webpush = require('web-push');
 const { neon } = require('@neondatabase/serverless');
 const qs = require('qs');
