@@ -193,7 +193,7 @@ const scraperHandler = async (event) => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     content: `🚨 **Alerte Scraper PharmaGarde**
-Le scraper a rencontré une erreur : `${err.message}`
+Le scraper a rencontré une erreur : ${err.message}
 📅 Date : ${new Date().toLocaleString('fr-FR')}`
                 })
             });
