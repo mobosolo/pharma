@@ -207,5 +207,5 @@ Le scraper a rencontré une erreur : `${err.message}`
   }
 };
 
-exports.handler = schedule("@daily", scraperHandler);
+//exports.handler = schedule("@daily", scraperHandler);
 
