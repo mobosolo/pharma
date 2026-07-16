@@ -37,6 +37,7 @@ function FitBounds({ points }) {
 function PharmacyPopup({ pharmacie }) {
   const tel = pharmacie.telephone || '';
   const telLink = tel.replace(/\s/g, '');
+  const coords = parseCoords(pharmacie);
 
   return (
     <div className="min-w-[160px]">
@@ -54,16 +55,30 @@ function PharmacyPopup({ pharmacie }) {
           {formatDistance(pharmacie.distanceKm)}
         </p>
       )}
-      {telLink && (
-        <a
-          href={`tel:${telLink}`}
-          className="inline-flex items-center gap-1.5 mt-2 text-xs font-semibold"
-          style={{ color: 'var(--color-teal)' }}
-        >
-          <Phone size={12} />
-          Appeler
-        </a>
-      )}
+      <div className="flex gap-3 mt-2">
+        {telLink && (
+          <a
+            href={`tel:${telLink}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold"
+            style={{ color: 'var(--color-teal)' }}
+          >
+            <Phone size={12} />
+            Appeler
+          </a>
+        )}
+        {coords && (
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${coords.lat},${coords.lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-semibold"
+            style={{ color: 'var(--color-teal)' }}
+          >
+            <MapPin size={12} />
+            Itinéraire
+          </a>
+        )}
+      </div>
     </div>
   );
 }

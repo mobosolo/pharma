@@ -5,6 +5,11 @@ export default function PharmacieCard({ pharmacie }) {
   const tel = pharmacie.telephone || '';
   const telLink = tel.replace(/\s/g, '');
 
+  const hasCoords = pharmacie.latitude !== null && pharmacie.latitude !== undefined &&
+                    pharmacie.longitude !== null && pharmacie.longitude !== undefined;
+  const lat = hasCoords ? parseFloat(pharmacie.latitude) : null;
+  const lng = hasCoords ? parseFloat(pharmacie.longitude) : null;
+
   return (
     <div
       className="rounded-2xl p-5 flex flex-col gap-3"
@@ -32,22 +37,45 @@ export default function PharmacieCard({ pharmacie }) {
         )}
       </div>
 
-      {telLink ? (
-        <a
-          href={`tel:${telLink}`}
-          className="flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-colors"
-          style={{ background: 'var(--color-teal)' }}
-          onMouseOver={e => e.currentTarget.style.background = 'var(--color-teal-hover)'}
-          onMouseOut={e => e.currentTarget.style.background = 'var(--color-teal)'}
-        >
-          <Phone size={17} strokeWidth={2.5} />
-          Appeler
-        </a>
-      ) : (
-        <span className="text-sm text-center py-3 rounded-xl" style={{ color: 'var(--color-muted)', background: 'var(--color-border)' }}>
-          Numéro indisponible
-        </span>
-      )}
+      <div className="flex gap-3">
+        {telLink ? (
+          <a
+            href={`tel:${telLink}`}
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-colors"
+            style={{ background: 'var(--color-teal)' }}
+            onMouseOver={e => e.currentTarget.style.background = 'var(--color-teal-hover)'}
+            onMouseOut={e => e.currentTarget.style.background = 'var(--color-teal)'}
+          >
+            <Phone size={17} strokeWidth={2.5} />
+            Appeler
+          </a>
+        ) : (
+          <span className="flex-1 text-sm text-center py-3 rounded-xl" style={{ color: 'var(--color-muted)', background: 'var(--color-border)' }}>
+            Numéro indisponible
+          </span>
+        )}
+
+        {hasCoords && (
+          <a
+            href={`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold border transition-colors"
+            style={{ borderColor: 'var(--color-teal)', color: 'var(--color-teal)', background: 'transparent' }}
+            onMouseOver={e => {
+              e.currentTarget.style.background = 'var(--color-teal)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseOut={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--color-teal)';
+            }}
+          >
+            <MapPin size={17} strokeWidth={2.5} />
+            Itinéraire
+          </a>
+        )}
+      </div>
     </div>
   );
 }
