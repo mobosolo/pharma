@@ -7,13 +7,13 @@ const SOURCE_URL = 'https://sites.google.com/view/pharmaciedegarde-lome/tour-de-
 
 function cleanPhone(phone) {
   if (!phone) return null;
-  let cleaned = phone.replace(/[\s\-\.]/g, '');
-  if (cleaned.startsWith('00228')) {
-    cleaned = '+' + cleaned.substring(2);
-  } else if (!cleaned.startsWith('+228') && cleaned.length >= 8) {
-    cleaned = cleaned.startsWith('228') ? '+' + cleaned : '+228' + cleaned;
+  let cleaned = phone.replace(/[^\d]/g, '');
+  if (cleaned.length === 8) {
+    cleaned = '228' + cleaned;
+  } else if (cleaned.startsWith('00228')) {
+    cleaned = cleaned.substring(2);
   }
-  return cleaned;
+  return '+' + cleaned;
 }
 
 function fetchGoogleSitesData() {
@@ -25,46 +25,52 @@ function fetchGoogleSitesData() {
       }
 
       let data = '';
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
+      res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
-        // Découpe le HTML en blocs, un par occurrence de "☎"
         const blocks = data.split('☎');
         const entries = [];
+
+        console.log(`Découpage en ${blocks.length} blocs après '☎'`);
 
         for (let i = 1; i < blocks.length; i++) {
           const block = blocks[i];
 
-          // Téléphone : les chiffres juste après le "☎"
-          const phoneMatch = block.match(/^[^\d]*([\d\s]{8,15})/);
-          if (!phoneMatch) continue;
+          // On extrait les 1500 premiers caractères du bloc et on enlève les balises HTML
+          const snippet = block.substring(0, 1500);
+          const textOnly = snippet.replace(/<[^>]*>/g, ' ');
+          
+          // Recherche d'un motif de téléphone (8 chiffres, potentiellement espacés)
+          // Le premier groupe de chiffres d'au moins 8 caractères après '☎'
+          const phoneMatch = textOnly.match(/([\d\s]{8,15})/);
+          if (!phoneMatch) {
+            continue;
+          }
+          
           const phone = cleanPhone(phoneMatch[1]);
 
           // Lien Maps avec coordonnées : cherche le premier !1d{lng}!2d{lat} après ce bloc
           const coordMatch = block.match(/!1d(-?\d+\.\d+)!2d(-?\d+\.\d+)/);
-          if (!coordMatch) continue;
+          if (!coordMatch) {
+            continue;
+          }
 
           const longitude = parseFloat(coordMatch[1]);
           const latitude = parseFloat(coordMatch[2]);
 
-          entries.push({ phone, latitude, longitude });
+          entries.push({ phone, latitude, longitude, rawPhoneText: phoneMatch[1].trim() });
         }
 
         resolve(entries);
       });
-    }).on('error', (err) => {
-      reject(err);
-    });
+    }).on('error', reject);
   });
 }
 
 async function main() {
-  console.log("Récupération des données du site Google Sites via https...");
+  console.log("Récupération des données de géolocalisation...");
   try {
     const geoEntries = await fetchGoogleSitesData();
-    console.log(`${geoEntries.length} entrées avec coordonnées trouvées sur le site source.`);
+    console.log(`${geoEntries.length} entrées valides extraites du site source.`);
 
     let matched = 0;
     let notFound = 0;
@@ -81,19 +87,21 @@ async function main() {
 
       if (result.length > 0) {
         matched++;
-        console.log(`✓ Matché : ${result[0].nom}`);
+        console.log(`✓ Matché : ${result[0].nom} (${entry.phone}) -> lat: ${entry.latitude}, lng: ${entry.longitude}`);
       } else {
         notFound++;
+        console.log(`✗ Non trouvé : ${entry.phone} (brut: "${entry.rawPhoneText}")`);
       }
     }
 
-    console.log(`\nTerminé. ${matched} pharmacies géocodées, ${notFound} numéros sans correspondance dans notre base.`);
+    console.log(`\nBilan : ${matched} pharmacies géocodées avec succès.`);
+    console.log(`${notFound} numéros n'ont pas trouvé de correspondance.`);
   } catch (err) {
     console.error("Erreur de traitement:", err.message);
   }
 }
 
 main().catch(err => {
-  console.error("Erreur:", err.message);
+  console.error("Erreur générale:", err.message);
   process.exit(1);
 });
