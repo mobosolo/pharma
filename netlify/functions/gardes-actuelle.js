@@ -17,7 +17,7 @@ exports.handler = async (event) => {
         }
         const sql = neon(process.env.DATABASE_URL);
         const result = await sql`
-            SELECT g.id, g.date_debut, g.date_fin, p.id, p.nom, p.telephone, p.adresse, p.assurances, p.horaires
+            SELECT g.id, g.date_debut, g.date_fin, p.id, p.nom, p.telephone, p.adresse, p.assurances, p.horaires, p.latitude, p.longitude
             FROM gardes g
             JOIN pharmacies_gardes pg ON g.id = pg.garde_id
             JOIN pharmacies p ON pg.pharmacie_id = p.id

@@ -1,4 +1,5 @@
-import { Phone } from 'lucide-react';
+import { Phone, MapPin } from 'lucide-react';
+import { formatDistance } from '../utils/distance';
 
 export default function PharmacieCard({ pharmacie }) {
   const tel = pharmacie.telephone || '';
@@ -10,9 +11,20 @@ export default function PharmacieCard({ pharmacie }) {
       style={{ background: 'var(--color-card)' }}
     >
       <div>
-        <h2 className="text-base font-bold leading-snug" style={{ color: 'var(--color-text)' }}>
-          {pharmacie.nom}
-        </h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-base font-bold leading-snug" style={{ color: 'var(--color-text)' }}>
+            {pharmacie.nom}
+          </h2>
+          {pharmacie.distanceKm !== null && pharmacie.distanceKm !== undefined && (
+            <span
+              className="flex items-center gap-1 text-xs font-semibold shrink-0 px-2 py-1 rounded-lg"
+              style={{ color: 'var(--color-teal)', background: 'var(--color-bg)' }}
+            >
+              <MapPin size={12} />
+              {formatDistance(pharmacie.distanceKm)}
+            </span>
+          )}
+        </div>
         {pharmacie.adresse && (
           <p className="text-sm mt-0.5" style={{ color: 'var(--color-muted)' }}>
             {pharmacie.adresse}

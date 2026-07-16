@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SlidersHorizontal, WifiOff, RefreshCw, MapPinOff } from 'lucide-react';
+import { SlidersHorizontal, WifiOff, RefreshCw, MapPinOff, Navigation, LoaderCircle, List, Map } from 'lucide-react';
 import PharmacieCard from './components/PharmacieCard.jsx';
 import SkeletonCard from './components/SkeletonCard.jsx';
 import ZoneSheet from './components/ZoneSheet.jsx';
 import Onboarding from './components/Onboarding.jsx';
+import MapView from './components/MapView.jsx';
 import { requestPushSubscription } from './push-service';
+import { getUserLocation, getGeolocationErrorMessage } from './utils/geolocation';
+import { sortPharmaciesByDistance } from './utils/distance';
 
 const STORAGE_KEY_ZONE   = 'pharma_zone';
 const STORAGE_KEY_DEVICE = 'pharma_device_id';
@@ -36,6 +39,12 @@ export default function App() {
   const [zones, setZones]           = useState([]);
   const [cached, setCached]         = useState(null);
 
+  // Géolocalisation (déclenchée uniquement par bouton explicite)
+  const [userLocation, setUserLocation]   = useState(null);
+  const [locatingUser, setLocatingUser]   = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [viewMode, setViewMode]           = useState('list'); // 'list' | 'map'
+
   // Chargement zones (pour le bottom-sheet)
   useEffect(() => {
     fetch('/.netlify/functions/zones').then(r => r.json()).then(setZones).catch(() => {});
@@ -51,13 +60,11 @@ export default function App() {
       const data = await res.json();
       setPharmacies(data.pharmacies || []);
       setGardeInfo(data.current);
-      // Mise en cache locale
       const toCache = { pharmacies: data.pharmacies, current: data.current, ts: Date.now() };
       localStorage.setItem(STORAGE_KEY_CACHE + z.id, JSON.stringify(toCache));
       setCached(null);
     } catch (e) {
       setError(e.message);
-      // Fallback cache
       const raw = localStorage.getItem(STORAGE_KEY_CACHE + z.id);
       if (raw) setCached(JSON.parse(raw));
     } finally {
@@ -65,7 +72,6 @@ export default function App() {
     }
   }, []);
 
-  // Charger au montage si une zone est déjà sauvegardée
   useEffect(() => {
     if (zone) fetchGardes(zone);
   }, [zone, fetchGardes]);
@@ -73,31 +79,47 @@ export default function App() {
   const handleZoneSelected = async (z, pushToken) => {
     localStorage.setItem(STORAGE_KEY_ZONE, JSON.stringify(z));
     setZone(z);
+    setUserLocation(null);
+    setLocationError(null);
+    setViewMode('list');
 
     const deviceId = getOrCreateDeviceId();
-    
-    // Utilise le token passé par l'onboarding ou fait un appel fallback si manquant
     const finalToken = pushToken || await requestPushSubscription();
-    
-    // Enregistrement de l'abonnement avec le token push
+
     fetch('/.netlify/functions/abonnements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        device_id: deviceId, 
+      body: JSON.stringify({
+        device_id: deviceId,
         zone_id: z.id,
-        pushToken: finalToken // Envoi du token (endpoint + keys)
+        pushToken: finalToken
       }),
     }).catch(() => {});
   };
 
-  // Format date
+  const handleLocateMe = async () => {
+    setLocatingUser(true);
+    setLocationError(null);
+    try {
+      const loc = await getUserLocation();
+      setUserLocation(loc);
+    } catch (e) {
+      setLocationError(getGeolocationErrorMessage(e));
+    } finally {
+      setLocatingUser(false);
+    }
+  };
+
   const todayLabel = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   const periodeLabel = gardeInfo
     ? `du ${new Date(gardeInfo.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${new Date(gardeInfo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
     : todayLabel;
 
   if (!zone) return <Onboarding onZoneSelected={handleZoneSelected} />;
+
+  const displayedPharmacies = userLocation
+    ? sortPharmaciesByDistance(pharmacies, userLocation)
+    : pharmacies;
 
   return (
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg)' }}>
@@ -121,15 +143,65 @@ export default function App() {
             <SlidersHorizontal size={18} />
           </button>
         </div>
+
+        {/* Bouton géolocalisation */}
+        {!userLocation && !loading && pharmacies.length > 0 && (
+          <button
+            onClick={handleLocateMe}
+            disabled={locatingUser}
+            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium w-full justify-center"
+            style={{ background: 'var(--color-surface)', color: 'var(--color-teal)' }}
+          >
+            {locatingUser ? <LoaderCircle size={16} className="animate-spin" /> : <Navigation size={16} />}
+            {locatingUser ? 'Localisation en cours…' : 'Trier par proximité'}
+          </button>
+        )}
+        {locationError && (
+          <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-muted)' }}>
+            {locationError}
+          </p>
+        )}
+        {userLocation && (
+          <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-muted)' }}>
+            Trié par proximité de votre position
+          </p>
+        )}
+
+        {/* Bascule liste / carte */}
+        {!loading && !error && pharmacies.length > 0 && (
+          <div
+            className="mt-3 flex rounded-xl p-1 gap-1"
+            style={{ background: 'var(--color-surface)' }}
+          >
+            <button
+              onClick={() => setViewMode('list')}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                background: viewMode === 'list' ? 'var(--color-teal)' : 'transparent',
+                color: viewMode === 'list' ? '#fff' : 'var(--color-muted)',
+              }}
+            >
+              <List size={15} /> Liste
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                background: viewMode === 'map' ? 'var(--color-teal)' : 'transparent',
+                color: viewMode === 'map' ? '#fff' : 'var(--color-muted)',
+              }}
+            >
+              <Map size={15} /> Carte
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Contenu principal */}
       <div className="px-5 flex flex-col gap-4">
 
-        {/* État de chargement */}
         {loading && [1,2,3].map(i => <SkeletonCard key={i} />)}
 
-        {/* Erreur réseau */}
         {!loading && error && (
           <div className="rounded-2xl p-6 flex flex-col items-center gap-4 text-center" style={{ background: 'var(--color-surface)' }}>
             <WifiOff size={32} style={{ color: 'var(--color-muted)' }} />
@@ -147,7 +219,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Cache affiché si erreur réseau */}
         {!loading && error && cached && cached.pharmacies.length > 0 && (
           <div className="flex flex-col gap-4">
             <p className="text-xs text-center px-4" style={{ color: 'var(--color-muted)' }}>
@@ -157,7 +228,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Aucune pharmacie */}
         {!loading && !error && pharmacies.length === 0 && (
           <div className="rounded-2xl p-8 flex flex-col items-center gap-4 text-center" style={{ background: 'var(--color-surface)' }}>
             <MapPinOff size={32} style={{ color: 'var(--color-muted)' }} />
@@ -179,20 +249,21 @@ export default function App() {
           </div>
         )}
 
-        {/* Liste des pharmacies */}
-        {!loading && !error && pharmacies.map(p => (
+        {!loading && !error && viewMode === 'map' && pharmacies.length > 0 && (
+          <MapView pharmacies={displayedPharmacies} userLocation={userLocation} />
+        )}
+
+        {!loading && !error && viewMode === 'list' && displayedPharmacies.map(p => (
           <PharmacieCard key={p.id} pharmacie={p} />
         ))}
       </div>
 
-      {/* Footer discret */}
       <p className="text-center text-xs mt-8 px-6" style={{ color: 'var(--color-border)' }}>
         Source · Ordre National des Pharmaciens du Togo
         <br />
         <span style={{ color: 'var(--color-muted)' }}>Vérifiez par téléphone en cas d'urgence.</span>
       </p>
 
-      {/* Bottom sheet changement de zone */}
       {showSheet && (
         <ZoneSheet
           zones={zones}
