@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { SlidersHorizontal, WifiOff, RefreshCw, MapPinOff, Navigation, LoaderCircle, List, Map } from 'lucide-react';
 import PharmacieCard from './components/PharmacieCard.jsx';
 import SkeletonCard from './components/SkeletonCard.jsx';
@@ -7,7 +7,7 @@ import Onboarding from './components/Onboarding.jsx';
 import MapView from './components/MapView.jsx';
 import { requestPushSubscription } from './push-service';
 import { getUserLocation, getGeolocationErrorMessage } from './utils/geolocation';
-import { sortPharmaciesByDistance } from './utils/distance';
+import { sortPharmaciesByDistance, distanceKm } from './utils/distance';
 
 const STORAGE_KEY_ZONE   = 'pharma_zone';
 const STORAGE_KEY_DEVICE = 'pharma_device_id';
@@ -39,28 +39,77 @@ export default function App() {
   const [zones, setZones]           = useState([]);
   const [cached, setCached]         = useState(null);
 
-  // Géolocalisation (déclenchée uniquement par bouton explicite)
+  // Géolocalisation
   const [userLocation, setUserLocation]   = useState(null);
   const [locatingUser, setLocatingUser]   = useState(false);
   const [locationError, setLocationError] = useState(null);
   const [viewMode, setViewMode]           = useState('list'); // 'list' | 'map'
+
+  const lastLocationRef = useRef(null);
+  const skipNextFetchRef = useRef(false);
+
+  // Conserver la dernière position à jour pour comparaison dans le suivi continu
+  useEffect(() => {
+    lastLocationRef.current = userLocation;
+  }, [userLocation]);
+
+  // Suivi continu de la position
+  useEffect(() => {
+    if (!userLocation) return; // Seulement actif si géoloc déjà accordée
+    
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const lastLoc = lastLocationRef.current;
+        // Ne retrier que si déplacement significatif (> ~150m) pour éviter des recalculs inutiles
+        if (!lastLoc || distanceKm(lastLoc.lat, lastLoc.lng, newLoc.lat, newLoc.lng) > 0.15) {
+          setUserLocation(newLoc);
+        }
+      },
+      (err) => console.warn('Suivi position interrompu:', err.message),
+      { enableHighAccuracy: false, maximumAge: 30000 }
+    );
+    
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [userLocation === null]);
 
   // Chargement zones (pour le bottom-sheet)
   useEffect(() => {
     fetch('/.netlify/functions/zones').then(r => r.json()).then(setZones).catch(() => {});
   }, []);
 
+  // Détection automatique au montage en mode national si la position n'est pas encore définie
+  useEffect(() => {
+    if (zone?.id === 'nationwide' && !userLocation && !locatingUser) {
+      setLocatingUser(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setLocatingUser(false);
+        },
+        (err) => {
+          setLocationError(getGeolocationErrorMessage(err));
+          setLocatingUser(false);
+        },
+        { enableHighAccuracy: false, maximumAge: 30000 }
+      );
+    }
+  }, [zone]);
+
   const fetchGardes = useCallback(async (z) => {
     if (!z) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/.netlify/functions/gardes-actuelle?zone_id=${z.id}`);
+      const url = z.id === 'nationwide'
+        ? '/.netlify/functions/gardes-nationwide'
+        : `/.netlify/functions/gardes-actuelle?zone_id=${z.id}`;
+      const res = await fetch(url);
       if (!res.ok) throw new Error('Erreur réseau');
       const data = await res.json();
       setPharmacies(data.pharmacies || []);
-      setGardeInfo(data.current);
-      const toCache = { pharmacies: data.pharmacies, current: data.current, ts: Date.now() };
+      setGardeInfo(data.current || null);
+      const toCache = { pharmacies: data.pharmacies, current: data.current || null, ts: Date.now() };
       localStorage.setItem(STORAGE_KEY_CACHE + z.id, JSON.stringify(toCache));
       setCached(null);
     } catch (e) {
@@ -73,28 +122,49 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (zone) fetchGardes(zone);
+    if (zone) {
+      if (skipNextFetchRef.current) {
+        skipNextFetchRef.current = false;
+        return;
+      }
+      fetchGardes(zone);
+    }
   }, [zone, fetchGardes]);
 
-  const handleZoneSelected = async (z, pushToken) => {
+  const handleZoneSelected = async (z, pushToken, initialLocation = null, initialPharmacies = null) => {
     localStorage.setItem(STORAGE_KEY_ZONE, JSON.stringify(z));
     setZone(z);
-    setUserLocation(null);
+    
+    if (initialLocation) {
+      setUserLocation(initialLocation);
+    } else {
+      setUserLocation(null);
+    }
+    
+    if (initialPharmacies) {
+      setPharmacies(initialPharmacies);
+      skipNextFetchRef.current = true;
+    } else {
+      setPharmacies([]);
+    }
+    
     setLocationError(null);
     setViewMode('list');
 
     const deviceId = getOrCreateDeviceId();
-    const finalToken = pushToken || await requestPushSubscription();
+    if (z.id !== 'nationwide') {
+      const finalToken = pushToken || await requestPushSubscription().catch(() => null);
 
-    fetch('/.netlify/functions/abonnements', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        device_id: deviceId,
-        zone_id: z.id,
-        pushToken: finalToken
-      }),
-    }).catch(() => {});
+      fetch('/.netlify/functions/abonnements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          device_id: deviceId,
+          zone_id: z.id,
+          pushToken: finalToken
+        }),
+      }).catch(() => {});
+    }
   };
 
   const handleLocateMe = async () => {
@@ -103,6 +173,8 @@ export default function App() {
     try {
       const loc = await getUserLocation();
       setUserLocation(loc);
+      // Basculer en mode nationwide (Toutes les zones)
+      handleZoneSelected({ id: 'nationwide', nom: 'Toutes les zones' }, null, loc);
     } catch (e) {
       setLocationError(getGeolocationErrorMessage(e));
     } finally {
@@ -144,26 +216,31 @@ export default function App() {
           </button>
         </div>
 
-        {/* Bouton géolocalisation */}
-        {!userLocation && !loading && pharmacies.length > 0 && (
-          <button
-            onClick={handleLocateMe}
-            disabled={locatingUser}
-            className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium w-full justify-center"
-            style={{ background: 'var(--color-surface)', color: 'var(--color-teal)' }}
+        {/* Bouton géolocalisation ou Badge */}
+        {userLocation ? (
+          <div
+            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold w-max mx-auto border"
+            style={{ borderColor: 'var(--color-teal)', color: 'var(--color-teal)', background: 'var(--color-surface)' }}
           >
-            {locatingUser ? <LoaderCircle size={16} className="animate-spin" /> : <Navigation size={16} />}
-            {locatingUser ? 'Localisation en cours…' : 'Trier par proximité'}
-          </button>
+            <span>📍</span> Position active
+          </div>
+        ) : (
+          !loading && pharmacies.length > 0 && (
+            <button
+              onClick={handleLocateMe}
+              disabled={locatingUser}
+              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium w-full justify-center"
+              style={{ background: 'var(--color-surface)', color: 'var(--color-teal)' }}
+            >
+              {locatingUser ? <LoaderCircle size={16} className="animate-spin" /> : <Navigation size={16} />}
+              {locatingUser ? 'Localisation en cours…' : 'Trier par proximité'}
+            </button>
+          )
         )}
+
         {locationError && (
           <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-muted)' }}>
             {locationError}
-          </p>
-        )}
-        {userLocation && (
-          <p className="text-xs mt-2 text-center" style={{ color: 'var(--color-muted)' }}>
-            Trié par proximité de votre position
           </p>
         )}
 

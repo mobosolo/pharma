@@ -6,9 +6,12 @@ import { ExpirationPlugin } from 'workbox-expiration'
 // Precache injection point
 precacheAndRoute(self.__WB_MANIFEST || [])
 
-// Runtime caching for Netlify functions (zones & gardes-actuelle)
+// Runtime caching for Netlify functions (zones & gardes-actuelle & gardes-nationwide)
 registerRoute(
-  ({ url }) => url.pathname.includes('/.netlify/functions/zones') || url.pathname.includes('/.netlify/functions/gardes-actuelle'),
+  ({ url }) => 
+    url.pathname.includes('/.netlify/functions/zones') || 
+    url.pathname.includes('/.netlify/functions/gardes-actuelle') ||
+    url.pathname.includes('/.netlify/functions/gardes-nationwide'),
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [

@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
-import { MapPin, Navigation, LoaderCircle, ArrowRight } from 'lucide-react';
+import { MapPin, Navigation, LoaderCircle } from 'lucide-react';
 import { requestPushSubscription } from '../push-service';
 import { getUserLocation } from '../utils/geolocation';
 
 export default function Onboarding({ onZoneSelected }) {
-  const [step, setStep]                 = useState('init'); // 'init' | 'detecting' | 'confirm' | 'manual'
-  const [zones, setZones]               = useState([]);
-  const [selected, setSelected]         = useState('');
-  const [detectedZone, setDetectedZone] = useState(null);
-  const [loading, setLoading]           = useState(false);
+  const [step, setStep]         = useState('init'); // 'init' | 'detecting' | 'manual'
+  const [zones, setZones]       = useState([]);
+  const [selected, setSelected] = useState('');
+  const [loading, setLoading]   = useState(false);
 
   // Charger les zones uniquement si on bascule en mode manuel
   const loadAllZones = async () => {
@@ -30,18 +29,21 @@ export default function Onboarding({ onZoneSelected }) {
     setStep('detecting');
     try {
       const loc = await getUserLocation();
-      const res = await fetch(`/.netlify/functions/detect-zone?lat=${loc.lat}&lng=${loc.lng}`);
-      if (!res.ok) throw new Error('Erreur de détection');
+      
+      // On appelle directement gardes-nationwide
+      const res = await fetch('/.netlify/functions/gardes-nationwide');
+      if (!res.ok) throw new Error('Erreur de chargement des gardes');
       const data = await res.json();
       
-      if (data.zone_id && data.zone_nom) {
-        setDetectedZone({ id: data.zone_id, nom: data.zone_nom });
-        setStep('confirm');
-      } else {
-        // Seuil dépassé ou pas de pharmacies de référence, fallback manuel
-        await loadAllZones();
-        setStep('manual');
-      }
+      const pushToken = await requestPushSubscription().catch(() => null);
+      
+      // Passe le tout à l'écran principal avec la position déjà connue
+      onZoneSelected(
+        { id: 'nationwide', nom: 'Toutes les zones' },
+        pushToken,
+        loc,
+        data.pharmacies || []
+      );
     } catch (e) {
       console.warn("Échec de la détection automatique, fallback manuel:", e.message);
       await loadAllZones();
@@ -52,12 +54,6 @@ export default function Onboarding({ onZoneSelected }) {
   const handleManualTransition = async () => {
     await loadAllZones();
     setStep('manual');
-  };
-
-  const handleConfirmContinue = async () => {
-    if (!detectedZone) return;
-    const pushToken = await requestPushSubscription();
-    onZoneSelected(detectedZone, pushToken);
   };
 
   const handleManualContinue = async () => {
@@ -96,7 +92,7 @@ export default function Onboarding({ onZoneSelected }) {
               style={{ background: 'var(--color-teal)' }}
             >
               <Navigation size={16} />
-              Détecter ma zone
+              Détecter ma position
             </button>
 
             <button
@@ -121,55 +117,12 @@ export default function Onboarding({ onZoneSelected }) {
 
             <div className="text-center">
               <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
-                Détection de votre zone...
+                Détection de votre position...
               </h1>
               <p className="text-sm leading-relaxed animate-pulse" style={{ color: 'var(--color-muted)' }}>
-                Recherche de la pharmacie de repère la plus proche de votre position.
+                Récupération des pharmacies actuellement de garde au Togo.
               </p>
             </div>
-          </>
-        )}
-
-        {/* Étape Confirmation de zone détectée */}
-        {step === 'confirm' && detectedZone && (
-          <>
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--color-teal)' }}
-            >
-              <MapPin size={28} color="white" strokeWidth={2.5} />
-            </div>
-
-            <div className="text-center">
-              <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
-                Zone identifiée !
-              </h1>
-              <p className="text-sm leading-relaxed mb-4" style={{ color: 'var(--color-muted)' }}>
-                Vous semblez être dans le secteur :
-              </p>
-              <div 
-                className="inline-block px-4 py-2.5 rounded-xl font-bold text-sm border"
-                style={{ borderColor: 'var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text)' }}
-              >
-                {detectedZone.nom}
-              </div>
-            </div>
-
-            <button
-              onClick={handleConfirmContinue}
-              className="w-full py-3.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all"
-              style={{ background: 'var(--color-teal)' }}
-            >
-              Continuer <ArrowRight size={16} />
-            </button>
-
-            <button
-              onClick={handleManualTransition}
-              className="text-xs font-semibold hover:underline"
-              style={{ color: 'var(--color-muted)' }}
-            >
-              Ce n'est pas ma zone, choisir manuellement
-            </button>
           </>
         )}
 
