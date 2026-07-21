@@ -152,19 +152,17 @@ export default function App() {
     setViewMode('list');
 
     const deviceId = getOrCreateDeviceId();
-    if (z.id !== 'nationwide') {
-      const finalToken = pushToken || await requestPushSubscription().catch(() => null);
+    const finalToken = pushToken || await requestPushSubscription().catch(() => null);
 
-      fetch('/.netlify/functions/abonnements', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          device_id: deviceId,
-          zone_id: z.id,
-          pushToken: finalToken
-        }),
-      }).catch(() => {});
-    }
+    fetch('/.netlify/functions/abonnements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        device_id: deviceId,
+        zone_id: z.id === 'nationwide' ? null : z.id,
+        pushToken: finalToken
+      }),
+    }).catch(() => {});
   };
 
   const handleLocateMe = async () => {

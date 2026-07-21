@@ -14,14 +14,11 @@ exports.handler = async (event) => {
     try {
         const body = JSON.parse(event.body || '{}');
         const device_id = body.device_id || event.queryStringParameters?.device_id;
-        const zone_id = body.zone_id;
+        const zone_id = body.zone_id; // Peut être null pour "toutes les zones"
         const push_data = body.pushToken;
         
         if (!device_id) {
             return { statusCode: 400, headers, body: JSON.stringify({error: "Le paramètre device_id est manquant."}) };
-        }
-        if (!zone_id) {
-            return { statusCode: 400, headers, body: JSON.stringify({error: "Le paramètre zone_id est manquant."}) };
         }
         
         const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -31,9 +28,11 @@ exports.handler = async (event) => {
         
         const sql = neon(process.env.DATABASE_URL);
         
-        const checkZone = await sql`SELECT id FROM zones WHERE id = ${zone_id}`;
-        if (checkZone.length === 0) {
-            return { statusCode: 404, headers, body: JSON.stringify({error: "Zone introuvable."}) };
+        if (zone_id) {
+            const checkZone = await sql`SELECT id FROM zones WHERE id = ${zone_id}`;
+            if (checkZone.length === 0) {
+                return { statusCode: 404, headers, body: JSON.stringify({error: "Zone introuvable."}) };
+            }
         }
         
         let endpoint = null, keys_p256dh = null, keys_auth = null;

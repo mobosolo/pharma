@@ -139,16 +139,18 @@ const scraperHandler = async (event) => {
         const zoneIds = Array.from(zonesTouchees);
         
         try {
+            // Récupérer tous les abonnés concernés (zone spécifique touchée OU abonnement national), dédoublés
             const abos = await sql`
-                SELECT endpoint, keys_p256dh, keys_auth 
+                SELECT DISTINCT ON (endpoint) id, endpoint, keys_p256dh, keys_auth 
                 FROM abonnements 
-                WHERE zone_id = ANY(${zoneIds}::int[]) AND endpoint IS NOT NULL
+                WHERE (zone_id = ANY(${zoneIds}::int[]) OR zone_id IS NULL)
+                AND endpoint IS NOT NULL
             `;
             
             let sentCount = 0;
             const payload = JSON.stringify({
-                title: 'Nouvelle rotation !',
-                body: 'La liste des pharmacies de garde pour votre zone a été mise à jour.',
+                title: 'Pharmacies de garde',
+                body: 'La liste des pharmacies de garde a été mise à jour.',
                 icon: '/icons/icon-192x192.png',
                 data: {
                     url: '/'
@@ -170,13 +172,13 @@ const scraperHandler = async (event) => {
                 } catch (error) {
                     if (error.statusCode === 410 || error.statusCode === 404) {
                         console.log(`L'abonnement ${sub.endpoint} est expiré/Gone (410). Suppression en base...`);
-                        await sql`DELETE FROM abonnements WHERE endpoint = ${sub.endpoint}`;
+                        await sql`DELETE FROM abonnements WHERE id = ${sub.id}`;
                     } else {
                         console.error(`Erreur push vers ${sub.endpoint}:`, error.message);
                     }
                 }
             }
-            console.log(`[PUSH NOTIF] Bilan: ${sentCount} notifications envoyées avec succès. (Sur un total de ${abos.length} abonnements valides ciblés)`);
+            console.log(`[PUSH NOTIF] Bilan: ${sentCount} notifications envoyées avec succès. (Sur un total de ${abos.length} abonnés uniques concernés)`);
         } catch (pushErr) {
             console.error("Erreur générale lors de la boucle push:", pushErr);
         }

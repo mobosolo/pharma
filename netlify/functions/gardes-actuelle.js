@@ -16,25 +16,41 @@ exports.handler = async (event) => {
             return { statusCode: 400, headers, body: JSON.stringify({error: "Le paramètre zone_id est obligatoire."}) };
         }
         const sql = neon(process.env.DATABASE_URL);
-        const result = await sql`
-            SELECT g.id, g.date_debut, g.date_fin, p.id, p.nom, p.telephone, p.adresse, p.assurances, p.horaires, p.latitude, p.longitude
-            FROM gardes g
-            JOIN pharmacies_gardes pg ON g.id = pg.garde_id
-            JOIN pharmacies p ON pg.pharmacie_id = p.id
-            WHERE g.date_fin >= CURRENT_DATE 
-            AND g.date_debut <= (CURRENT_DATE + INTERVAL '1 day')
-            AND p.zone_id = ${zone_id}
-            ORDER BY g.date_debut DESC
-            LIMIT 100
+        
+        // 1. Déterminer la garde unique actuelle
+        const currentGarde = await sql`
+            SELECT id, date_debut, date_fin 
+            FROM gardes 
+            WHERE date_fin >= CURRENT_DATE 
+            ORDER BY date_debut DESC 
+            LIMIT 1
         `;
         
-        const currentGarde = await sql`SELECT id, date_debut, date_fin FROM gardes WHERE date_fin >= CURRENT_DATE ORDER BY date_debut DESC LIMIT 1`;
+        if (currentGarde.length === 0) {
+            return { 
+                statusCode: 200, 
+                headers, 
+                body: JSON.stringify({ 
+                    current: null, 
+                    pharmacies: [] 
+                }) 
+            };
+        }
+        
+        // 2. Récupérer les pharmacies UNIQUEMENT liées à cette garde précise
+        const result = await sql`
+            SELECT p.id, p.nom, p.telephone, p.adresse, p.assurances, p.horaires, p.latitude, p.longitude
+            FROM pharmacies_gardes pg
+            JOIN pharmacies p ON pg.pharmacie_id = p.id
+            WHERE pg.garde_id = ${currentGarde[0].id}
+            AND p.zone_id = ${zone_id}
+        `;
         
         return { 
             statusCode: 200, 
             headers, 
             body: JSON.stringify({ 
-                current: currentGarde[0] || null, 
+                current: currentGarde[0], 
                 pharmacies: result 
             }) 
         };
