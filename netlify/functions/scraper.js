@@ -170,11 +170,12 @@ const scraperHandler = async (event) => {
                     await webpush.sendNotification(pushSubscription, payload);
                     sentCount++;
                 } catch (error) {
-                    if (error.statusCode === 410 || error.statusCode === 404) {
-                        console.log(`L'abonnement ${sub.endpoint} est expiré/Gone (410). Suppression en base...`);
+                    const codesInvalides = [400, 401, 403, 404, 410];
+                    if (codesInvalides.includes(error.statusCode)) {
+                        console.log(`L'abonnement ${sub.id} est expiré ou définitivement invalide (code ${error.statusCode}). Suppression en base...`);
                         await sql`DELETE FROM abonnements WHERE id = ${sub.id}`;
                     } else {
-                        console.error(`Erreur push vers ${sub.endpoint}:`, error.message);
+                        console.error(`Échec envoi vers abonnement ${sub.id}: ${error.statusCode || error.message}`);
                     }
                 }
             }
