@@ -23,6 +23,8 @@ function cleanPhone(phone) {
         cleaned = '+228' + cleaned;
     }
   }
+  // Un téléphone togolais valide fait exactement 12 caractères (+228XXXXXXXX)
+  if (cleaned.length !== 12) return null;
   return cleaned;
 }
 
@@ -109,11 +111,12 @@ const scraperHandler = async (event) => {
             const pharmaRes = await sql`
                 INSERT INTO pharmacies (nom, telephone, adresse, assurances, horaires, zone_id) 
                 VALUES (${nom}, ${phone}, ${adresseText}, ${assurances}::jsonb, ${horaires}::jsonb, ${zoneId})
-                ON CONFLICT (nom, zone_id) DO UPDATE SET 
-                  telephone = EXCLUDED.telephone,
+                ON CONFLICT (telephone) DO UPDATE SET 
+                  nom = EXCLUDED.nom,
                   adresse = EXCLUDED.adresse,
                   assurances = EXCLUDED.assurances,
-                  horaires = EXCLUDED.horaires
+                  horaires = EXCLUDED.horaires,
+                  zone_id = EXCLUDED.zone_id
                 RETURNING id
             `;
             const pharmaId = pharmaRes[0].id;

@@ -1,0 +1,31 @@
+=== START TEST ===
+Total samples: 5
+
+Testing [1/5]: Pharmacie SOLIDARITE
+  Trying Q1: "Pharmacie SOLIDARITE, Lomé, Togo"
+  -> SUCCESS (Q1): 6.1966467, 1.1867889 (Pharmacie Solidarité, Avenue Pya, Agbalépédogan, 5e Arrondissement, Lomé, Région Maritime, Togo)
+Finished testing Pharmacie SOLIDARITE. Sleeping 1.1s for rate limit...
+
+Testing [2/5]: Pharmacie CHÂTEAU D'EAU
+  Trying Q1: "Pharmacie CHÂTEAU D'EAU, Lomé, Togo"
+  -> FAILED (Q1)
+  Trying Q2: "Chateau d'eau  BE, Lomé, Togo"
+  -> SUCCESS (Q2): 6.1357533, 1.2493449 (Château d'eau de Bè, Avenue Augustino de Souza, Bè-Ahligo, 3e Arrondissement, Lomé, Région Maritime, Togo)
+Finished testing Pharmacie CHÂTEAU D'EAU. Sleeping 1.1s for rate limit...
+
+Testing [3/5]: Pharmacie NATION
+  Trying Q1: "Pharmacie NATION, Lomé, Togo"
+  -> SUCCESS (Q1): 6.1922583, 1.1910253 (Pharmacie de la Nation, Avenue Pya, Agbalépédogan, 5e Arrondissement, Lomé, Région Maritime, Togo)
+Finished testing Pharmacie NATION. Sleeping 1.1s for rate limit...
+
+Testing [4/5]: Pharmacie ISIS
+  Trying Q1: "Pharmacie ISIS, Lomé, Togo"
+  -> SUCCESS (Q1): 6.1572745, 1.2331672 (Pharmacie Isis, Boulevard Jean-Paul II, Tokoin-Forever, 2e Arrondissement, Lomé, Région Maritime, Togo)
+Finished testing Pharmacie ISIS. Sleeping 1.1s for rate limit...
+
+Testing [5/5]: Pharmacie BETHEL
+  Trying Q1: "Pharmacie BETHEL, Lomé, Togo"
+  -> SUCCESS (Q1): 6.1755861, 1.1809121 (Pharmacie Bethel, Rue Bethel, Soviépé, 5e Arrondissement, Lomé, Région Maritime, Togo)
+Finished testing Pharmacie BETHEL. Sleeping 1.1s for rate limit...
+
+=== END TEST ===

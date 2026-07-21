@@ -25,12 +25,13 @@ async function initDB() {
       CREATE TABLE pharmacies (
         id SERIAL PRIMARY KEY,
         nom VARCHAR(255) NOT NULL,
-        telephone VARCHAR(50),
+        telephone VARCHAR(50) UNIQUE,
         adresse TEXT,
+        latitude DOUBLE PRECISION,
+        longitude DOUBLE PRECISION,
         assurances JSONB DEFAULT '[]'::jsonb,
         horaires JSONB DEFAULT '[]'::jsonb,
-        zone_id INT REFERENCES zones(id) ON DELETE SET NULL,
-        UNIQUE (nom, zone_id)
+        zone_id INT REFERENCES zones(id) ON DELETE SET NULL
       );
     `;
     console.log("Table 'pharmacies' recréée.");
