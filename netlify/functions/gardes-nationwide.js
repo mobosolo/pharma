@@ -12,6 +12,14 @@ exports.handler = async (event) => {
     
     try {
         const sql = neon(process.env.DATABASE_URL);
+        // Déterminer la garde unique actuelle
+        const currentGarde = await sql`
+            SELECT id, date_debut, date_fin 
+            FROM gardes 
+            WHERE date_fin >= CURRENT_DATE 
+            ORDER BY date_debut DESC 
+            LIMIT 1
+        `;
         // On récupère toutes les pharmacies actuellement de garde, toutes zones confondues.
         const result = await sql`
             SELECT p.id, p.nom, p.telephone, p.adresse, p.latitude, p.longitude, p.zone_id, z.nom as zone_nom, g.date_debut, g.date_fin
@@ -25,10 +33,13 @@ exports.handler = async (event) => {
             LIMIT 500
         `;
         
+        const current = currentGarde.length > 0 ? currentGarde[0] : null;
+        
         return { 
             statusCode: 200, 
             headers, 
             body: JSON.stringify({ 
+                current,
                 pharmacies: result 
             }) 
         };

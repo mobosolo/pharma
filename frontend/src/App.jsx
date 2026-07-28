@@ -194,44 +194,54 @@ export default function App() {
   return (
     <div className="min-h-screen pb-10" style={{ background: 'var(--color-bg)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-10 px-5 pt-6 pb-4" style={{ background: 'var(--color-bg)' }}>
+      <div className="sticky top-0 z-10 glass px-5 pt-4 pb-3" style={{ boxShadow: 'var(--shadow-header)', borderBottom: '1px solid var(--color-border)' }}>
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+          <div className="min-w-0 flex-1 mr-3">
+            <h1 className="text-[17px] font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
               Pharmacies de garde
             </h1>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-              {zone.nom} · {periodeLabel}
+            <p className="text-xs font-medium mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
+              {zone.nom}
             </p>
           </div>
           <button
             onClick={() => setShowSheet(true)}
-            className="mt-0.5 p-2 rounded-xl transition-colors"
-            style={{ background: 'var(--color-surface)', color: 'var(--color-muted)' }}
+            className="mt-0.5 p-2.5 rounded-xl shrink-0 transition-colors"
+            style={{ background: 'var(--color-card)', color: 'var(--color-text)', boxShadow: 'var(--shadow-card)' }}
             aria-label="Changer de zone"
           >
-            <SlidersHorizontal size={18} />
+            <SlidersHorizontal size={17} />
           </button>
         </div>
+
+        {/* Période de garde */}
+        {gardeInfo && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-teal)' }}></span>
+            <p className="text-xs font-semibold" style={{ color: 'var(--color-teal)' }}>
+              {periodeLabel}
+            </p>
+          </div>
+        )}
 
         {/* Bouton géolocalisation ou Badge */}
         {userLocation ? (
           <div
-            className="mt-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold w-max mx-auto border"
-            style={{ borderColor: 'var(--color-teal)', color: 'var(--color-teal)', background: 'var(--color-surface)' }}
+            className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold w-max border"
+            style={{ borderColor: 'var(--color-teal)', color: 'var(--color-teal)', background: 'var(--color-teal-soft)' }}
           >
-            <span>📍</span> Position active
+            <span className="text-xs">📍</span> Position active
           </div>
         ) : (
           !loading && pharmacies.length > 0 && (
             <button
               onClick={handleLocateMe}
               disabled={locatingUser}
-              className="mt-3 flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium w-full justify-center"
-              style={{ background: 'var(--color-surface)', color: 'var(--color-teal)' }}
+              className="mt-2.5 flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold w-full justify-center active:scale-[0.98]"
+              style={{ background: 'var(--color-card)', color: 'var(--color-teal)', boxShadow: 'var(--shadow-card)', transition: 'transform 0.1s ease' }}
             >
-              {locatingUser ? <LoaderCircle size={16} className="animate-spin" /> : <Navigation size={16} />}
-              {locatingUser ? 'Localisation en cours…' : 'Trier par proximité'}
+              {locatingUser ? <LoaderCircle size={15} className="animate-spin" /> : <Navigation size={15} />}
+              {locatingUser ? 'Localisation…' : 'Trier par proximité'}
             </button>
           )
         )}
@@ -245,51 +255,53 @@ export default function App() {
         {/* Bascule liste / carte */}
         {!loading && !error && pharmacies.length > 0 && (
           <div
-            className="mt-3 flex rounded-xl p-1 gap-1"
-            style={{ background: 'var(--color-surface)' }}
+            className="mt-2.5 flex rounded-xl p-1 gap-1"
+            style={{ background: 'var(--color-border-soft)' }}
           >
             <button
               onClick={() => setViewMode('list')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-medium transition-all active:scale-[0.97]"
               style={{
-                background: viewMode === 'list' ? 'var(--color-teal)' : 'transparent',
-                color: viewMode === 'list' ? '#fff' : 'var(--color-muted)',
+                background: viewMode === 'list' ? 'var(--color-card)' : 'transparent',
+                color: viewMode === 'list' ? 'var(--color-text)' : 'var(--color-muted)',
+                boxShadow: viewMode === 'list' ? 'var(--shadow-card)' : 'none',
               }}
             >
-              <List size={15} /> Liste
+              <List size={14} /> Liste
             </button>
             <button
               onClick={() => setViewMode('map')}
-              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[13px] font-medium transition-all active:scale-[0.97]"
               style={{
-                background: viewMode === 'map' ? 'var(--color-teal)' : 'transparent',
-                color: viewMode === 'map' ? '#fff' : 'var(--color-muted)',
+                background: viewMode === 'map' ? 'var(--color-card)' : 'transparent',
+                color: viewMode === 'map' ? 'var(--color-text)' : 'var(--color-muted)',
+                boxShadow: viewMode === 'map' ? 'var(--shadow-card)' : 'none',
               }}
             >
-              <Map size={15} /> Carte
+              <Map size={14} /> Carte
             </button>
           </div>
         )}
       </div>
 
       {/* Contenu principal */}
-      <div className="px-5 flex flex-col gap-4">
+      <div className="px-5 mt-3 flex flex-col gap-3.5">
 
         {loading && [1,2,3].map(i => <SkeletonCard key={i} />)}
 
         {!loading && error && (
-          <div className="rounded-2xl p-6 flex flex-col items-center gap-4 text-center" style={{ background: 'var(--color-surface)' }}>
-            <WifiOff size={32} style={{ color: 'var(--color-muted)' }} />
+          <div className="card p-6 flex flex-col items-center gap-3 text-center">
+            <WifiOff size={28} style={{ color: 'var(--color-muted)' }} />
             <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Impossible de charger la liste.</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Impossible de charger la liste.</p>
               <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>Vérifiez votre connexion.</p>
             </div>
             <button
               onClick={() => fetchGardes(zone)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'var(--color-teal)' }}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white active:scale-[0.97]"
+              style={{ background: 'var(--color-teal)', transition: 'transform 0.1s ease' }}
             >
-              <RefreshCw size={15} /> Réessayer
+              <RefreshCw size={14} /> Réessayer
             </button>
           </div>
         )}
@@ -304,10 +316,10 @@ export default function App() {
         )}
 
         {!loading && !error && pharmacies.length === 0 && (
-          <div className="rounded-2xl p-8 flex flex-col items-center gap-4 text-center" style={{ background: 'var(--color-surface)' }}>
-            <MapPinOff size={32} style={{ color: 'var(--color-muted)' }} />
+          <div className="card p-6 flex flex-col items-center gap-3 text-center">
+            <MapPinOff size={28} style={{ color: 'var(--color-muted)' }} />
             <div>
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+              <p className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                 Aucune pharmacie de garde trouvée pour cette zone.
               </p>
               <p className="text-xs mt-1" style={{ color: 'var(--color-muted)' }}>
@@ -316,8 +328,8 @@ export default function App() {
             </div>
             <button
               onClick={() => setShowSheet(true)}
-              className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'var(--color-teal)' }}
+              className="px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white active:scale-[0.97]"
+              style={{ background: 'var(--color-teal)', transition: 'transform 0.1s ease' }}
             >
               Changer de zone
             </button>
@@ -328,8 +340,8 @@ export default function App() {
           <MapView pharmacies={displayedPharmacies} userLocation={userLocation} />
         )}
 
-        {!loading && !error && viewMode === 'list' && displayedPharmacies.map(p => (
-          <PharmacieCard key={p.id} pharmacie={p} />
+        {!loading && !error && viewMode === 'list' && displayedPharmacies.map((p, i) => (
+          <PharmacieCard key={p.id} pharmacie={p} index={i} />
         ))}
       </div>
 
