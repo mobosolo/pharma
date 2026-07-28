@@ -6,3 +6,4 @@
 - Mobile-first UX priority: design decisions should prioritize mobile experience ("surtout sur mobile") while maintaining good UI/UX on all devices. Confidence: 0.6
 - Wants a modern, contemporary design aesthetic for the app rather than a utilitarian/functional-only look. Confidence: 0.5
 - Wants a light/dark theme system that automatically adapts to the user's system preference (prefers-color-scheme), not a manual toggle. Confidence: 0.9
+- Design system consistency: insists all UI icons come from the project's icon library (Lucide) — no emoji or non-system icons in the interface. PWA/branding assets (favicon, manifest icons) must also match the app's visual identity and color palette. Confidence: 0.8
