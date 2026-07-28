@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SlidersHorizontal, WifiOff, RefreshCw, MapPinOff, Navigation, LoaderCircle, List, Map } from 'lucide-react';
+import { SlidersHorizontal, WifiOff, RefreshCw, MapPinOff, Navigation, LoaderCircle, List, Map, MapPin, Calendar } from 'lucide-react';
 import PharmacieCard from './components/PharmacieCard.jsx';
 import SkeletonCard from './components/SkeletonCard.jsx';
 import ZoneSheet from './components/ZoneSheet.jsx';
@@ -180,10 +180,10 @@ export default function App() {
     }
   };
 
-  const todayLabel = new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  const todayLabel = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const periodeLabel = gardeInfo
     ? `du ${new Date(gardeInfo.date_debut).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${new Date(gardeInfo.date_fin).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
-    : todayLabel;
+    : '';
 
   if (!zone) return <Onboarding onZoneSelected={handleZoneSelected} />;
 
@@ -200,8 +200,10 @@ export default function App() {
             <h1 className="text-[17px] font-bold tracking-tight" style={{ color: 'var(--color-text)' }}>
               Pharmacies de garde
             </h1>
-            <p className="text-xs font-medium mt-0.5 truncate" style={{ color: 'var(--color-muted)' }}>
-              {zone.nom}
+            {/* Date du jour */}
+            <p className="text-[11px] font-medium mt-0.5 flex items-center gap-1" style={{ color: 'var(--color-muted)' }}>
+              <Calendar size={12} strokeWidth={2} />
+              {todayLabel}
             </p>
           </div>
           <button
@@ -214,15 +216,16 @@ export default function App() {
           </button>
         </div>
 
-        {/* Période de garde */}
-        {gardeInfo && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--color-teal)' }}></span>
-            <p className="text-xs font-semibold" style={{ color: 'var(--color-teal)' }}>
+        {/* Zone + Période de garde */}
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <p className="text-xs font-semibold truncate" style={{ color: 'var(--color-text)' }}>{zone.nom}</p>
+          {gardeInfo && periodeLabel && (
+            <p className="text-[11px] font-medium flex items-center gap-1" style={{ color: 'var(--color-teal)' }}>
+              <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: 'var(--color-teal)' }}></span>
               {periodeLabel}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Bouton géolocalisation ou Badge */}
         {userLocation ? (
@@ -230,7 +233,8 @@ export default function App() {
             className="mt-2.5 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold w-max border"
             style={{ borderColor: 'var(--color-teal)', color: 'var(--color-teal)', background: 'var(--color-teal-soft)' }}
           >
-            <span className="text-xs">📍</span> Position active
+            <MapPin size={12} fill="var(--color-teal)" strokeWidth={0} />
+            Position active
           </div>
         ) : (
           !loading && pharmacies.length > 0 && (

@@ -12,17 +12,18 @@ export default defineConfig({
       srcDir: 'src',
       filename: 'sw.js',
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon-32x32.png'],
       manifest: {
         name: 'Pharmacies de Garde — Togo',
         short_name: 'PharmaGarde',
         description: 'Trouvez la pharmacie de garde la plus proche au Togo',
-        theme_color: '#f8fafc',
-        background_color: '#f8fafc',
+        theme_color: '#0d9488',
+        background_color: '#f1f5f9',
         display: 'standalone',
         icons: [
           { src: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
         ]
       }
     }),
